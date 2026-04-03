@@ -1,0 +1,1 @@
+# intelligo-certificate-trial
