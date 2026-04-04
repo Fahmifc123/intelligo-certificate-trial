@@ -76,14 +76,14 @@ const CertificateForm = ({
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Pilih Kegiatan
+            Pilih Kelas
           </label>
           <CustomDropdown
             name="program_title"
             value={formData.program_title}
             onChange={onInputChange}
             options={certificateOptions.certificateOptions}
-            placeholder="Pilih kegiatan yang diikuti"
+            placeholder="Pilih kelas yang diikuti"
             required
           />
         </div>
@@ -242,7 +242,7 @@ const CertificateForm = ({
           onClick={() => setShowExampleModal(false)}
         >
           <div 
-            className="relative max-w-4xl w-full bg-white rounded-xl shadow-2xl overflow-hidden"
+            className="relative bg-white rounded-xl shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             <button
@@ -255,7 +255,7 @@ const CertificateForm = ({
             <img
               src="/dummy.png"
               alt="Contoh Screenshot"
-              className="w-full h-auto"
+              className="max-w-2xl h-auto"
             />
           </div>
         </div>

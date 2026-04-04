@@ -55,9 +55,7 @@ async def submit_certificate(
         if is_ocr_valid and is_ai_valid:
             cert_filename = generate_certificate(full_name, program_title, start_date, end_date)
             cert_url = f"{BASE_URL}/static/certificates/generate/{cert_filename}"
-            
-            logger.info(f"Certificate generated for {email}: {cert_filename}")
-            
+
             return {
                 "success": True,
                 "certificate_id": cert_filename.replace(".pdf", ""),
