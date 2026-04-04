@@ -1,3 +1,2 @@
 #!/bin/bash
-cd "$(dirname "$0")"
-python main.py
+python3 main.py
