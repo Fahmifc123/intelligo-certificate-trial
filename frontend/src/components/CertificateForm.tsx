@@ -1,5 +1,5 @@
 import React from 'react'
-import { Upload, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react'
+import { Upload, FileText, Image as ImageIcon, AlertCircle, Eye, X } from 'lucide-react'
 import type { CertificateFormProps } from '../types'
 import certificateOptions from '../data/certificateOptions.json'
 import CustomDropdown from './CustomDropdown'
@@ -13,6 +13,8 @@ const CertificateForm = ({
   onScreenshotChange,
   onSubmit 
 }: CertificateFormProps): React.JSX.Element => {
+  const [showExampleModal, setShowExampleModal] = React.useState(false)
+  
   return (
     <div className="card p-8">
       <div className="flex items-center gap-3 mb-6">
@@ -175,6 +177,16 @@ const CertificateForm = ({
             </label>
           </div>
           
+          {/* Example Button */}
+          <button
+            type="button"
+            onClick={() => setShowExampleModal(true)}
+            className="mt-3 inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium text-primary bg-primary/10 hover:bg-primary/20 rounded-md transition-colors"
+          >
+            <Eye className="w-3.5 h-3.5" />
+            Lihat Contoh Screenshot
+          </button>
+          
           {/* Screenshot Preview */}
           {screenshot && (
             <div className="mt-3 p-3 bg-gray-50 rounded-lg">
@@ -222,6 +234,32 @@ const CertificateForm = ({
           Generate Sertifikat
         </button>
       </form>
+
+      {/* Example Modal */}
+      {showExampleModal && (
+        <div 
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+          onClick={() => setShowExampleModal(false)}
+        >
+          <div 
+            className="relative max-w-4xl w-full bg-white rounded-xl shadow-2xl overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setShowExampleModal(false)}
+              className="absolute top-3 right-3 w-8 h-8 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg z-10"
+            >
+              <X className="w-5 h-5 text-gray-600" />
+            </button>
+            <img
+              src="/dummy.png"
+              alt="Contoh Screenshot"
+              className="w-full h-auto"
+            />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

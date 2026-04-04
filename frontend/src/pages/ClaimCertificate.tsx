@@ -6,7 +6,6 @@ import LoadingState from '../components/LoadingState'
 import SuccessState from '../components/SuccessState'
 import ErrorState from '../components/ErrorState'
 import type { CertificateFormData, CertificateResponse } from '../types'
-import { Beaker } from 'lucide-react'
 
 type Status = 'idle' | 'loading' | 'success' | 'error'
 
@@ -73,29 +72,18 @@ const ClaimCertificate = (): React.JSX.Element => {
     setStatus('loading')
 
     try {
-      // Check if using dummy data (screenshot name contains 'dummy')
-      const isDummyData = screenshot?.name.includes('dummy')
-      const endpoint = isDummyData ? 'http://localhost:8000/generate-dummy' : 'http://localhost:8000/submit'
+      const endpoint = 'http://localhost:8000/submit'
       
       // Create FormData for multipart/form-data submission
       const formDataToSend = new FormData()
-      
-      if (isDummyData) {
-        // For dummy endpoint
-        formDataToSend.append('name', formData.name)
-        formDataToSend.append('email', formData.email)
-        formDataToSend.append('project_title', formData.program_title)
-        formDataToSend.append('social_link', formData.social_link)
-      } else {
-        // For real submission endpoint
-        formDataToSend.append('full_name', formData.name)
-        formDataToSend.append('email', formData.email)
-        formDataToSend.append('project_title', formData.project_title)
-        formDataToSend.append('program_title', formData.program_title)
-        formDataToSend.append('start_date', formData.start_date)
-        formDataToSend.append('end_date', formData.end_date)
-        formDataToSend.append('screenshot', screenshot)
-      }
+      formDataToSend.append('full_name', formData.name)
+      formDataToSend.append('email', formData.email)
+      formDataToSend.append('project_title', formData.project_title)
+      formDataToSend.append('program_title', formData.program_title)
+      formDataToSend.append('start_date', formData.start_date)
+      formDataToSend.append('end_date', formData.end_date)
+      formDataToSend.append('social_link', formData.social_link)
+      formDataToSend.append('screenshot', screenshot)
 
       const response = await fetch(endpoint, {
         method: 'POST',
@@ -104,11 +92,11 @@ const ClaimCertificate = (): React.JSX.Element => {
 
       const data: CertificateResponse = await response.json()
 
-      if (data.status === 'success') {
+      if (data.success) {
         setCertificateUrl(data.certificate_url || '')
         setStatus('success')
       } else {
-        setErrorMessage(data.message || 'Validasi gagal, pastikan kamu sudah share project')
+        setErrorMessage(data.message || data.error || 'Validasi gagal, pastikan kamu sudah share project')
         setStatus('error')
       }
     } catch (error) {
@@ -132,35 +120,6 @@ const ClaimCertificate = (): React.JSX.Element => {
     setScreenshot(null)
     setCertificateUrl('')
     setErrorMessage('')
-  }
-
-  // Generate dummy data for testing
-  const generateDummyData = async (): Promise<void> => {
-    const dummyData: CertificateFormData = {
-      name: 'Mukhamad Alyasyi Thobiq',
-      email: 'alyasyi.thobiq@email.com',
-      project_title: 'Implementasi Chatbot Assistant Menggunakan Metode TF-IDF dan Cosine Similarity',
-      program_title: 'Trial Bootcamp Data Science & AI - Intelligo ID',
-      start_date: '2025-10-23',
-      end_date: '2025-10-27',
-      social_link: 'https://linkedin.com/in/alyasyi-thobiq',
-    }
-    setFormData(dummyData)
-    
-    // Fetch the dummy.png file from backend
-    try {
-      const response = await fetch('http://localhost:8000/static/dummy.png')
-      if (!response.ok) {
-        throw new Error('Failed to fetch dummy image')
-      }
-      const blob = await response.blob()
-      const dummyFile = new File([blob], 'screenshot_dummy.png', { type: 'image/png' })
-      setScreenshot(dummyFile)
-      alert('Dummy data generated! Click "Generate Sertifikat" to create certificate.')
-    } catch (error) {
-      console.error('Failed to load dummy image:', error)
-      alert('Failed to load dummy image. Please upload a screenshot manually.')
-    }
   }
 
   return (
@@ -188,14 +147,6 @@ const ClaimCertificate = (): React.JSX.Element => {
           <>
             {/* Dummy Data Button */}
             <div className="mb-6 flex justify-end">
-              <button
-                onClick={generateDummyData}
-                type="button"
-                className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition-all duration-200 text-sm font-medium"
-              >
-                <Beaker className="w-4 h-4" />
-                Generate Dummy Data
-              </button>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

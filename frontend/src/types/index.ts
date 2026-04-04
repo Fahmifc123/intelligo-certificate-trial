@@ -11,11 +11,25 @@ export interface CertificateFormData {
 
 // API Response Types
 export interface CertificateResponse {
-  status: 'success' | 'error';
+  success: boolean;
   certificate_url?: string;
+  certificate_id?: string;
   message?: string;
+  error?: string;
   ocr_text?: string;
   ai_validation?: boolean;
+  keywords_found?: string[];
+  email?: string;
+  name?: string;
+  validation?: {
+    ocr_valid: boolean;
+    ai_valid: boolean;
+  };
+  details?: {
+    ocr_valid: boolean;
+    ai_valid: boolean;
+    keywords_found: string[];
+  };
 }
 
 // Component Props Types

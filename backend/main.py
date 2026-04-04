@@ -3,6 +3,9 @@ Intelligo ID Certificate System - Main Application Entry Point
 ============================================================
 Modular structure for better code organization and tracking.
 """
+from dotenv import load_dotenv
+load_dotenv()  # Load environment variables from .env file
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles

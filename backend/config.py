@@ -5,9 +5,13 @@ Contains app settings, constants, and global configurations.
 import os
 import logging
 
-# Setup logging
+# Setup logging - suppress noisy third-party loggers
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Suppress noisy third-party loggers
+for noisy_logger in ['comtypes', 'PIL', 'urllib3', 'charset_normalizer']:
+    logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
 # App Configuration
 APP_TITLE = "Intelligo ID Certificate System"

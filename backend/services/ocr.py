@@ -2,10 +2,16 @@
 OCR and AI validation service module.
 Contains functions for extracting text from images and AI-based validation.
 """
-import pytesseract
+import os
 from PIL import Image
 import logging
-import os
+
+# Set Tesseract path BEFORE importing pytesseract
+tesseract_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+if os.path.exists(tesseract_path):
+    os.environ['TESSERACT_CMD'] = tesseract_path
+
+import pytesseract
 
 from config import (
     REQUIRED_KEYWORDS,
@@ -13,6 +19,9 @@ from config import (
     get_openai_client,
     logger
 )
+
+# Configure pytesseract (use inner module for older versions)
+pytesseract.pytesseract.tesseract_cmd = tesseract_path
 
 def extract_text_from_image(image_path: str) -> str:
     """
@@ -29,15 +38,15 @@ def extract_text_from_image(image_path: str) -> str:
         if image.mode != 'RGB':
             image = image.convert('RGB')
         
-        # Run OCR
+        # Extract text using pytesseract
         text = pytesseract.image_to_string(image, lang='eng+ind')
         
-        # Convert to lowercase for easier matching
-        text_lower = text.lower()
+        if text.strip():
+            text_lower = text.lower()
+            return text_lower
         
-        logger.info(f"OCR extracted text (first 200 chars): {text_lower[:200]}...")
-        
-        return text_lower
+        logger.warning("No text extracted from image")
+        return ""
         
     except Exception as e:
         logger.error(f"OCR extraction failed: {str(e)}")
@@ -88,7 +97,7 @@ Answer only:
 VALID or INVALID"""
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4.1-nano",
             messages=[
                 {"role": "system", "content": "You are a validation assistant. Answer only VALID or INVALID."},
                 {"role": "user", "content": prompt}

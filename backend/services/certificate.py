@@ -140,12 +140,25 @@ def _format_date_range(start_date: str, end_date: str) -> str:
     Format date range intelligently.
     - Same month: "23 to 27 October 2025"
     - Different months: "23 October to 27 November 2025"
+    
+    Accepts both ISO format (2026-03-01) and text format (23 October 2025)
     """
+    from datetime import datetime
     import re
     
     def parse_date(date_str: str) -> tuple:
-        """Parse date string to (day, month, year)"""
+        """Parse date string to (day, month_name, year)"""
         date_str = date_str.strip()
+        
+        # Try ISO format: "2026-03-01"
+        try:
+            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
+            day = str(date_obj.day)
+            month_name = date_obj.strftime("%B")
+            year = str(date_obj.year)
+            return (day, month_name, year)
+        except ValueError:
+            pass
         
         # Try format: "23 October 2025"
         match = re.match(r'(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})', date_str)
@@ -274,8 +287,6 @@ def generate_certificate(name: str, program_title: str, start_date: str, end_dat
     )
     template_path = os.path.abspath(template_path)
     
-    logger.info(f"Loading template from: {template_path}")
-    
     # Load the presentation
     prs = Presentation(template_path)
     slide = prs.slides[0]
@@ -294,7 +305,6 @@ def generate_certificate(name: str, program_title: str, start_date: str, end_dat
     
     # Save the modified PPTX
     prs.save(pptx_filepath)
-    logger.info(f"PPTX saved: {pptx_filepath}")
     
     # Convert PPTX to PDF
     _convert_pptx_to_pdf(pptx_filepath, pdf_filepath)
@@ -302,83 +312,70 @@ def generate_certificate(name: str, program_title: str, start_date: str, end_dat
     # Remove temporary PPTX file
     if os.path.exists(pptx_filepath):
         os.remove(pptx_filepath)
-        logger.info(f"Temporary PPTX removed: {pptx_filepath}")
     
-    logger.info(f"Certificate generated: {pdf_filepath} with Issue ID: {issue_id}")
     return filename
 
 
 def _convert_pptx_to_pdf(pptx_path: str, pdf_path: str) -> bool:
     """
-    Convert PPTX to PDF using available methods.
-    Tries LibreOffice first, then falls back to other methods.
+    Convert PPTX to PDF using LibreOffice (Linux/macOS) or PowerPoint COM (Windows).
     """
+    import platform
+    
     pptx_path = os.path.abspath(pptx_path)
     pdf_path = os.path.abspath(pdf_path)
     
-    # Method 1: Try using LibreOffice
-    try:
-        # Use LibreOffice headless to convert
-        cmd = [
-            "soffice",
-            "--headless",
-            "--convert-to", "pdf",
-            "--outdir", os.path.dirname(pdf_path),
-            pptx_path
-        ]
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=60
-        )
-        if result.returncode == 0:
-            logger.info("PDF generated using LibreOffice")
-            return True
-        else:
-            logger.warning(f"LibreOffice conversion failed: {result.stderr}")
-    except FileNotFoundError:
-        logger.warning("LibreOffice (soffice) not found in PATH")
-    except Exception as e:
-        logger.warning(f"LibreOffice conversion error: {e}")
+    is_windows = platform.system() == "Windows"
     
-    # Method 2: Try using comtypes (Windows only, requires PowerPoint)
-    try:
-        import comtypes.client
-
-        # Get absolute paths
-        abs_pptx = os.path.abspath(pptx_path)
-        abs_pdf = os.path.abspath(pdf_path)
-        
-        # Create PowerPoint application
-        powerpoint = comtypes.client.CreateObject("PowerPoint.Application")
-        powerpoint.Visible = 1
-        
-        # Open presentation
-        presentation = powerpoint.Presentations.Open(abs_pptx)
-        
-        # Save as PDF
-        presentation.SaveAs(abs_pdf, 32)  # 32 = ppSaveAsPDF
-        presentation.Close()
-        powerpoint.Quit()
-        
-        logger.info("PDF generated using PowerPoint COM")
-        return True
-    except ImportError:
-        logger.warning("comtypes not available")
-    except Exception as e:
-        logger.warning(f"PowerPoint COM conversion error: {e}")
+    if is_windows:
+        # Method: Use PowerPoint COM (Windows only)
         try:
             import comtypes.client
+
+            abs_pptx = os.path.abspath(pptx_path)
+            abs_pdf = os.path.abspath(pdf_path)
+            
+            powerpoint = comtypes.client.CreateObject("PowerPoint.Application")
+            presentation = powerpoint.Presentations.Open(abs_pptx, WithWindow=False)
+            presentation.SaveAs(abs_pdf, 32)  # 32 = ppSaveAsPDF
+            presentation.Close()
             powerpoint.Quit()
-        except:
-            pass
-    
-    # Method 3: Try pdf2image + Pillow as last resort (won't work for PPTX directly)
-    logger.error("No suitable conversion method found. Please install:")
-    logger.error("  - LibreOffice: https://www.libreoffice.org/download/")
-    logger.error("  - Or comtypes: pip install comtypes (Windows with PowerPoint)")
-    raise RuntimeError(
-        "Cannot convert PPTX to PDF. Install LibreOffice or comtypes. "
-        "See logs for details."
-    )
+            
+            return True
+        except ImportError:
+            logger.error("comtypes not installed. Run: pip install comtypes")
+        except Exception as e:
+            logger.error(f"PowerPoint COM conversion failed: {e}")
+        
+        raise RuntimeError(
+            "Cannot convert PPTX to PDF. Please install comtypes: pip install comtypes"
+        )
+    else:
+        # Method: Use LibreOffice (Linux/macOS)
+        try:
+            cmd = [
+                "soffice",
+                "--headless",
+                "--convert-to", "pdf",
+                "--outdir", os.path.dirname(pdf_path),
+                pptx_path
+            ]
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+            if result.returncode == 0:
+                logger.info("PDF generated using LibreOffice")
+                return True
+            else:
+                logger.error(f"LibreOffice conversion failed: {result.stderr}")
+        except FileNotFoundError:
+            logger.error("LibreOffice (soffice) not found in PATH")
+        except Exception as e:
+            logger.error(f"LibreOffice conversion error: {e}")
+        
+        raise RuntimeError(
+            "Cannot convert PPTX to PDF. Install LibreOffice: https://www.libreoffice.org/download/"
+        )
