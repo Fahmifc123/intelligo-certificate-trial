@@ -15,6 +15,9 @@ const ClaimCertificate = (): React.JSX.Element => {
     name: '',
     email: '',
     project_title: '',
+    program_title: '',
+    start_date: '',
+    end_date: '',
     social_link: '',
   })
   const [file, setFile] = useState<File | null>(null)
@@ -23,7 +26,7 @@ const ClaimCertificate = (): React.JSX.Element => {
   const [certificateUrl, setCertificateUrl] = useState<string>('')
   const [errorMessage, setErrorMessage] = useState<string>('')
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
@@ -76,13 +79,21 @@ const ClaimCertificate = (): React.JSX.Element => {
       
       // Create FormData for multipart/form-data submission
       const formDataToSend = new FormData()
-      formDataToSend.append('name', formData.name)
-      formDataToSend.append('email', formData.email)
-      formDataToSend.append('project_title', formData.project_title)
-      formDataToSend.append('social_link', formData.social_link)
       
-      // Only append screenshot for real submission
-      if (!isDummyData && screenshot) {
+      if (isDummyData) {
+        // For dummy endpoint
+        formDataToSend.append('name', formData.name)
+        formDataToSend.append('email', formData.email)
+        formDataToSend.append('project_title', formData.program_title)
+        formDataToSend.append('social_link', formData.social_link)
+      } else {
+        // For real submission endpoint
+        formDataToSend.append('full_name', formData.name)
+        formDataToSend.append('email', formData.email)
+        formDataToSend.append('project_title', formData.project_title)
+        formDataToSend.append('program_title', formData.program_title)
+        formDataToSend.append('start_date', formData.start_date)
+        formDataToSend.append('end_date', formData.end_date)
         formDataToSend.append('screenshot', screenshot)
       }
 
@@ -112,6 +123,9 @@ const ClaimCertificate = (): React.JSX.Element => {
       name: '',
       email: '',
       project_title: '',
+      program_title: '',
+      start_date: '',
+      end_date: '',
       social_link: '',
     })
     setFile(null)
@@ -126,6 +140,9 @@ const ClaimCertificate = (): React.JSX.Element => {
       name: 'Mukhamad Alyasyi Thobiq',
       email: 'alyasyi.thobiq@email.com',
       project_title: 'Implementasi Chatbot Assistant Menggunakan Metode TF-IDF dan Cosine Similarity',
+      program_title: 'Trial Bootcamp Data Science & AI - Intelligo ID',
+      start_date: '2025-10-23',
+      end_date: '2025-10-27',
       social_link: 'https://linkedin.com/in/alyasyi-thobiq',
     }
     setFormData(dummyData)

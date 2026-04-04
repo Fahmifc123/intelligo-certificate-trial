@@ -1,6 +1,8 @@
 import React from 'react'
 import { Upload, FileText, Image as ImageIcon, AlertCircle } from 'lucide-react'
 import type { CertificateFormProps } from '../types'
+import certificateOptions from '../data/certificateOptions.json'
+import CustomDropdown from './CustomDropdown'
 
 const CertificateForm = ({ 
   formData, 
@@ -68,6 +70,50 @@ const CertificateForm = ({
             required
             className="input-field"
           />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Pilih Kegiatan
+          </label>
+          <CustomDropdown
+            name="program_title"
+            value={formData.program_title}
+            onChange={onInputChange}
+            options={certificateOptions.certificateOptions}
+            placeholder="Pilih kegiatan yang diikuti"
+            required
+          />
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tanggal Mulai
+            </label>
+            <input
+              type="date"
+              name="start_date"
+              value={formData.start_date}
+              onChange={onInputChange}
+              required
+              className="input-field"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tanggal Selesai
+            </label>
+            <input
+              type="date"
+              name="end_date"
+              value={formData.end_date}
+              onChange={onInputChange}
+              required
+              className="input-field"
+            />
+          </div>
         </div>
 
         <div>
