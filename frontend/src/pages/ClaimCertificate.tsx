@@ -72,7 +72,7 @@ const ClaimCertificate = (): React.JSX.Element => {
     setStatus('loading')
 
     try {
-      const endpoint = 'http://localhost:8000/submit'
+      const endpoint = 'http://43.134.70.75:8002/submit'
       
       // Create FormData for multipart/form-data submission
       const formDataToSend = new FormData()
