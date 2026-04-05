@@ -74,14 +74,11 @@ def _replace_text_in_shape(shape, replacements):
 
 def _get_output_directory():
     """Get the output directory for generated certificates."""
-    output_dir = os.path.join(
-        os.path.dirname(__file__), 
-        "..", 
-        "static", 
-        "certificates",
-        "generate"
-    )
-    return os.path.abspath(output_dir)
+    # Use backend directory as base (parent of services/)
+    backend_dir = os.path.dirname(os.path.dirname(__file__))
+    output_dir = os.path.join(backend_dir, "static", "certificates", "generate")
+    abs_output_dir = os.path.abspath(output_dir)
+    return abs_output_dir
 
 
 def _get_title_prefix(project_title: str) -> str:
@@ -324,6 +321,8 @@ def _convert_pptx_to_pdf(pptx_path: str, pdf_path: str) -> bool:
     
     pptx_path = os.path.abspath(pptx_path)
     pdf_path = os.path.abspath(pdf_path)
+    output_dir = os.path.dirname(pdf_path)
+    pdf_filename = os.path.basename(pdf_path)
     
     is_windows = platform.system() == "Windows"
     
@@ -353,24 +352,30 @@ def _convert_pptx_to_pdf(pptx_path: str, pdf_path: str) -> bool:
     else:
         # Method: Use LibreOffice (Linux/macOS)
         try:
+            # Use impress_pdf_Export for PowerPoint files (not writer_pdf_Export)
             cmd = [
                 "soffice",
                 "--headless",
-                "--convert-to", "pdf",
-                "--outdir", os.path.dirname(pdf_path),
+                "--norestore",
+                "--nofirststartwizard",
+                "--convert-to", "pdf:impress_pdf_Export",
+                "--outdir", output_dir,
                 pptx_path
             ]
+            
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
-                timeout=60
+                timeout=60,
+                cwd=output_dir
             )
-            if result.returncode == 0:
-                logger.info("PDF generated using LibreOffice")
+            
+            # Check if PDF was created with expected name
+            if os.path.exists(pdf_path):
+                logger.info("PDF generated successfully")
                 return True
-            else:
-                logger.error(f"LibreOffice conversion failed: {result.stderr}")
+        
         except FileNotFoundError:
             logger.error("LibreOffice (soffice) not found in PATH")
         except Exception as e:

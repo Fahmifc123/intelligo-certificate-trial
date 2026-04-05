@@ -3,13 +3,44 @@ OCR and AI validation service module.
 Contains functions for extracting text from images and AI-based validation.
 """
 import os
+import shutil
+import platform
 from PIL import Image
 import logging
 
-# Set Tesseract path BEFORE importing pytesseract
-tesseract_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
-if os.path.exists(tesseract_path):
-    os.environ['TESSERACT_CMD'] = tesseract_path
+# Dynamically detect Tesseract path based on OS
+def get_tesseract_path() -> str:
+    """Get Tesseract executable path for current OS."""
+    # Check environment variable first
+    env_path = os.environ.get('TESSERACT_CMD')
+    if env_path and os.path.exists(env_path):
+        return env_path
+    
+    # Check if tesseract is in PATH
+    system_tesseract = shutil.which('tesseract')
+    if system_tesseract and os.path.exists(system_tesseract):
+        return system_tesseract
+    
+    # Windows default
+    if platform.system() == 'Windows':
+        win_path = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+        if os.path.exists(win_path):
+            return win_path
+    
+    # Linux common paths
+    linux_paths = ['/usr/bin/tesseract', '/usr/local/bin/tesseract']
+    for path in linux_paths:
+        if os.path.exists(path):
+            return path
+    
+    # Fallback to PATH lookup
+    if system_tesseract:
+        return system_tesseract
+    
+    raise FileNotFoundError("Tesseract OCR not found. Please install Tesseract.")
+
+tesseract_path = get_tesseract_path()
+os.environ['TESSERACT_CMD'] = tesseract_path
 
 import pytesseract
 

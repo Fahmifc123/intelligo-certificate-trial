@@ -11,3 +11,5 @@ openai>=1.0.0
 python-pptx>=0.7.11
 comtypes>=1.1.14
 python-dotenv>=1.0.0
+gspread>=5.10.0
+oauth2client>=4.1.3

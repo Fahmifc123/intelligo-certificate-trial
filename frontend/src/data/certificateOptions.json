@@ -2,15 +2,21 @@
   "certificateOptions": [
     {
       "value": "Trial Bootcamp Data Science - Intelligo ID",
-      "label": "Trial Bootcamp Data Science - Intelligo ID"
+      "label": "Trial Bootcamp Data Science - Intelligo ID (2 - 6 Februari 2026)",
+      "start_date": "2 Februari 2026",
+      "end_date": "6 Februari 2026"
     },
     {
       "value": "Trial Bootcamp Artificial Intelligence - Intelligo ID",
-      "label": "Trial Bootcamp Artificial Intelligence - Intelligo ID"
+      "label": "Trial Bootcamp Artificial Intelligence - Intelligo ID (2 - 6 Februari 2026)",
+      "start_date": "2 Februari 2026",
+      "end_date": "6 Februari 2026"
     },
-        {
+    {
       "value": "Trial Bootcamp Data Science & AI - Intelligo ID",
-      "label": "Trial Bootcamp Data Science & AI - Intelligo ID"
+      "label": "Trial Bootcamp Data Science & AI - Intelligo ID (2 - 6 Februari 2026)",
+      "start_date": "2 Februari 2026",
+      "end_date": "6 Februari 2026"
     }
   ]
 }

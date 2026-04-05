@@ -88,36 +88,6 @@ const CertificateForm = ({
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tanggal Mulai
-            </label>
-            <input
-              type="date"
-              name="start_date"
-              value={formData.start_date}
-              onChange={onInputChange}
-              required
-              className="input-field"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Tanggal Selesai
-            </label>
-            <input
-              type="date"
-              name="end_date"
-              value={formData.end_date}
-              onChange={onInputChange}
-              required
-              className="input-field"
-            />
-          </div>
-        </div>
-
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Link Postingan (LinkedIn/Instagram)

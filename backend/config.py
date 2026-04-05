@@ -42,6 +42,8 @@ BONUS_KEYWORDS = ["project", "data", "analysis", "ai", "machine learning", "pyth
 # Certificate Settings
 CERTIFICATE_TEMPLATE = "INT-TBDSAI-{month}{year}-{file_id}"
 BASE_URL = "http://43.134.70.75:8002"
+# BASE_URL = "http://127.0.0.1:8002"
+
 
 # In-memory storage for duplicate prevention
 processed_emails = set()

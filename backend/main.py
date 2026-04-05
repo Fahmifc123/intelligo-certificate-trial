@@ -15,8 +15,10 @@ from config import (
     APP_DESCRIPTION,
     APP_VERSION,
     CORS_ORIGINS,
-    STATIC_DIRECTORY
+    STATIC_DIRECTORY,
+    logger
 )
+from database import init_db
 from routes.submit import router as submit_router
 
 # ============================================
@@ -42,6 +44,19 @@ app.mount("/static", StaticFiles(directory=STATIC_DIRECTORY), name="static")
 
 # Include routers
 app.include_router(submit_router)
+
+
+# ============================================
+# STARTUP EVENT
+# ============================================
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on app startup."""
+    try:
+        init_db()
+        logger.info("Database initialized on startup")
+    except Exception as e:
+        logger.error(f"Error initializing database on startup: {str(e)}")
 
 
 # ============================================

@@ -3,7 +3,6 @@ Validation service module.
 Contains functions for validating links, content, and uploaded files.
 """
 import requests
-import logging
 import os
 import uuid
 import shutil
@@ -103,3 +102,26 @@ def save_uploaded_file(upload_file: UploadFile) -> str:
     
     logger.info(f"File saved: {filepath}")
     return filepath
+
+
+def delete_uploaded_file(filepath: str) -> bool:
+    """
+    Delete uploaded file from the filesystem.
+    
+    Args:
+        filepath: Path to the file to delete
+        
+    Returns:
+        bool: True if file was successfully deleted, False otherwise
+    """
+    try:
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            logger.info(f"File deleted: {filepath}")
+            return True
+        else:
+            logger.warning(f"File not found for deletion: {filepath}")
+            return False
+    except Exception as e:
+        logger.error(f"Error deleting file {filepath}: {str(e)}")
+        return False

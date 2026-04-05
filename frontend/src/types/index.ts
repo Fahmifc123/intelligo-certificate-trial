@@ -21,6 +21,11 @@ export interface CertificateResponse {
   keywords_found?: string[];
   email?: string;
   name?: string;
+  previously_generated?: {
+    certificate_id: string;
+    certificate_url: string;
+    submitted_at: string;
+  };
   validation?: {
     ocr_valid: boolean;
     ai_valid: boolean;

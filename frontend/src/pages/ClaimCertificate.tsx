@@ -5,9 +5,11 @@ import RequirementsBox from '../components/RequirementsBox'
 import LoadingState from '../components/LoadingState'
 import SuccessState from '../components/SuccessState'
 import ErrorState from '../components/ErrorState'
+import AlreadyGeneratedState from '../components/AlreadyGeneratedState'
+import certificateOptions from '../data/certificateOptions.json'
 import type { CertificateFormData, CertificateResponse } from '../types'
 
-type Status = 'idle' | 'loading' | 'success' | 'error'
+type Status = 'idle' | 'loading' | 'success' | 'error' | 'already-generated'
 
 const ClaimCertificate = (): React.JSX.Element => {
   const [formData, setFormData] = useState<CertificateFormData>({
@@ -24,13 +26,34 @@ const ClaimCertificate = (): React.JSX.Element => {
   const [status, setStatus] = useState<Status>('idle')
   const [certificateUrl, setCertificateUrl] = useState<string>('')
   const [errorMessage, setErrorMessage] = useState<string>('')
+  const [previouslyGenerated, setPreviouslyGenerated] = useState<{
+    certificate_id: string
+    certificate_url: string
+    submitted_at: string
+  } | null>(null)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      }
+      
+      // Auto-populate dates when program_title changes
+      if (name === 'program_title') {
+        const selectedOption = certificateOptions.certificateOptions.find(
+          opt => opt.value === value
+        ) as any
+        
+        if (selectedOption) {
+          updated.start_date = selectedOption.start_date
+          updated.end_date = selectedOption.end_date
+        }
+      }
+      
+      return updated
+    })
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -72,7 +95,7 @@ const ClaimCertificate = (): React.JSX.Element => {
     setStatus('loading')
 
     try {
-      const endpoint = 'http://43.134.70.75:8002/submit'
+      const endpoint = `${import.meta.env.VITE_APP_BASE_URL}/submit`
       
       // Create FormData for multipart/form-data submission
       const formDataToSend = new FormData()
@@ -95,6 +118,10 @@ const ClaimCertificate = (): React.JSX.Element => {
       if (data.success) {
         setCertificateUrl(data.certificate_url || '')
         setStatus('success')
+      } else if (data.previously_generated) {
+        // Email sudah pernah generate sebelumnya
+        setPreviouslyGenerated(data.previously_generated)
+        setStatus('already-generated')
       } else {
         setErrorMessage(data.message || data.error || 'Validasi gagal, pastikan kamu sudah share project')
         setStatus('error')
@@ -120,6 +147,7 @@ const ClaimCertificate = (): React.JSX.Element => {
     setScreenshot(null)
     setCertificateUrl('')
     setErrorMessage('')
+    setPreviouslyGenerated(null)
   }
 
   return (
@@ -132,6 +160,15 @@ const ClaimCertificate = (): React.JSX.Element => {
         {status === 'success' && (
           <SuccessState 
             certificateUrl={certificateUrl} 
+            onReset={handleReset}
+          />
+        )}
+        
+        {status === 'already-generated' && previouslyGenerated && (
+          <AlreadyGeneratedState
+            certificateId={previouslyGenerated.certificate_id}
+            submittedAt={previouslyGenerated.submitted_at}
+            certificateUrl={previouslyGenerated.certificate_url}
             onReset={handleReset}
           />
         )}
