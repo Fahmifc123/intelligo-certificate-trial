@@ -33,13 +33,9 @@ Environment variables (see `config.py`):
 
 Google Sheets registration verification (`database.py`) checks the submitted email against the "Email" column of a public CSV export of a Google Sheet — no service account or credentials file needed, just an HTTP GET to `https://docs.google.com/spreadsheets/d/<id>/gviz/tq?tqx=out:csv&sheet=<name>`. It **fails closed**: if the sheet can't be fetched as CSV (not shared publicly, wrong ID/tab name, network error), submissions are rejected (not silently allowed) so unregistered people can't claim certificates just because verification is misconfigured.
 
-**Privacy note:** the sheet (or tab) pointed at by `GOOGLE_SHEET_ID`/`GOOGLE_SHEET_NAME` must be shared as "Anyone with the link can view" for the CSV fetch to work — anyone who knows the sheet ID can view everything in it. Since `GOOGLE_SHEET_ID` lives in this public repo/config, **don't point it at the raw form-responses sheet** (it likely has participants' names, phone numbers, etc.). Instead:
+To enable it, share the sheet at `GOOGLE_SHEET_ID` (defaults to the "Form Responses 1" sheet) as **"Anyone with the link" → Viewer**: open the sheet → Share (top right) → General access → change from "Restricted" to "Anyone with the link". No code or env var changes needed if you're keeping the default sheet.
 
-1. Create a **separate** Google Sheet containing only an Email column, e.g. cell A2 filled with `=IMPORTRANGE("<form-responses-sheet-id>", "Form Responses 1!C2:C")` (approve the IMPORTRANGE access prompt once).
-2. Share that separate sheet as "Anyone with the link" → Viewer. The original form-responses sheet stays private.
-3. Set `GOOGLE_SHEET_ID` to the new sheet's ID and `GOOGLE_SHEET_NAME` to its tab name (env vars, see below).
-
-`GOOGLE_SHEET_ID` and `GOOGLE_SHEET_NAME` can be overridden via env vars if you're pointing at a different sheet per deployment.
+Note: since `GOOGLE_SHEET_ID` lives in this repo/config, sharing that sheet publicly means anyone who has the ID can view its full contents (not just emails). If that's ever a concern, point `GOOGLE_SHEET_ID`/`GOOGLE_SHEET_NAME` (env vars) at a separate sheet instead that only exposes an Email column via `IMPORTRANGE`, and keep the original responses sheet private.
 
 ## Frontend
 
