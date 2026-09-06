@@ -19,11 +19,15 @@ APP_DESCRIPTION = "Trial Bootcamp Certificate Generation API"
 APP_VERSION = "1.0.0"
 
 # CORS Settings
-# Exact-match origins allowed by the browser.
+# Exact-match origins allowed by the browser. Extra production origins can be
+# added via the EXTRA_CORS_ORIGINS env var (comma-separated) without a code
+# change/redeploy whenever the frontend's domain changes.
 CORS_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
-]
+    "https://certificate.trial.intelligo.id",
+    "https://www.certificate.trial.intelligo.id",
+] + [origin.strip() for origin in os.getenv("EXTRA_CORS_ORIGINS", "").split(",") if origin.strip()]
 # FastAPI's CORSMiddleware does exact string matching on allow_origins, so a
 # glob like "https://*.vercel.app" never actually matches anything — any
 # Vercel preview/prod domain needs a regex instead.
