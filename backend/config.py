@@ -55,6 +55,11 @@ PROGRAM_TITLE = "Trial Bootcamp Data Science & AI - Intelligo ID"
 CERTIFICATE_TEMPLATE = "INT-TBDSAI-{month}{year}-{file_id}"
 BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8002")
 
+# Admin dashboard access key (sent as the X-Admin-Key header). Must be set
+# via env var to enable the /admin/* endpoints — if unset, they're disabled
+# entirely rather than left open with a guessable default.
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")
+
 
 # In-memory storage for duplicate prevention
 processed_emails = set()
