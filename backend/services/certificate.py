@@ -21,19 +21,23 @@ except ImportError:
 LIBREOFFICE_PATH = "soffice"  # Usually in PATH on Linux, or specific path on Windows
 
 
-def _replace_text_in_shape(shape, replacements):
+def _replace_text_in_shape(shape, replacements, font_size_overrides=None):
     """
     Replace multiple placeholders in a shape while preserving font formatting.
     replacements: dict of {old_text: new_text}
+    font_size_overrides: optional dict of {old_text: Pt(...)} to force a
+        specific font size for the run instead of preserving the template's.
     """
     if not hasattr(shape, "text_frame"):
         return False
-    
+
     # Get all text from shape
     full_text = shape.text
     if not any(placeholder in full_text for placeholder in replacements.keys()):
         return False
-    
+
+    font_size_overrides = font_size_overrides or {}
+
     # Process each paragraph
     for para in shape.text_frame.paragraphs:
         for run in para.runs:
@@ -41,7 +45,7 @@ def _replace_text_in_shape(shape, replacements):
                 if old_text in run.text:
                     # Get font properties before replacement
                     font_name = run.font.name
-                    font_size = run.font.size
+                    font_size = font_size_overrides.get(old_text, run.font.size)
                     font_bold = run.font.bold
                     font_italic = run.font.italic
                     font_color = None
@@ -50,10 +54,10 @@ def _replace_text_in_shape(shape, replacements):
                             font_color = run.font.color.rgb
                     except:
                         pass
-                    
+
                     # Replace the text
                     run.text = run.text.replace(old_text, new_text)
-                    
+
                     # Re-apply font properties (they might reset)
                     try:
                         if font_name:
@@ -295,21 +299,29 @@ def generate_certificate(name: str, program_title: str, start_date: str, end_dat
         "{{PELAKSANAAN}}": execution_date,
         "{{id}}": issue_id
     }
-    
+
+    # The Certificate ID box is narrow; the full ID string ("Certificate ID :
+    # INT-TBDSAI-0926-XXXX") wraps onto a second line at the template's
+    # default 11pt and overflows into the footer graphic below it. Shrink
+    # just that line so it reliably fits on one line.
+    font_size_overrides = {"{{id}}": Pt(9)}
+
     # Replace placeholders in all shapes
     for shape in slide.shapes:
-        _replace_text_in_shape(shape, replacements)
-    
+        _replace_text_in_shape(shape, replacements, font_size_overrides)
+
     # Save the modified PPTX
     prs.save(pptx_filepath)
-    
-    # Convert PPTX to PDF
-    _convert_pptx_to_pdf(pptx_filepath, pdf_filepath)
-    
-    # Remove temporary PPTX file
-    if os.path.exists(pptx_filepath):
-        os.remove(pptx_filepath)
-    
+
+    try:
+        # Convert PPTX to PDF
+        _convert_pptx_to_pdf(pptx_filepath, pdf_filepath)
+    finally:
+        # Always remove the temporary PPTX file, even if conversion failed,
+        # so failed attempts don't leak files into the generate/ directory.
+        if os.path.exists(pptx_filepath):
+            os.remove(pptx_filepath)
+
     return filename
 
 

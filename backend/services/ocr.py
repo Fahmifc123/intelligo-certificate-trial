@@ -39,9 +39,6 @@ def get_tesseract_path() -> str:
     
     raise FileNotFoundError("Tesseract OCR not found. Please install Tesseract.")
 
-tesseract_path = get_tesseract_path()
-os.environ['TESSERACT_CMD'] = tesseract_path
-
 import pytesseract
 
 from config import (
@@ -51,34 +48,54 @@ from config import (
     logger
 )
 
-# Configure pytesseract (use inner module for older versions)
-pytesseract.pytesseract.tesseract_cmd = tesseract_path
+# Locate Tesseract at import time, but never crash the whole app if it's
+# missing — OCR validation degrades to "skip" instead of taking down the API.
+try:
+    tesseract_path = get_tesseract_path()
+    os.environ['TESSERACT_CMD'] = tesseract_path
+    # Configure pytesseract (use inner module for older versions)
+    pytesseract.pytesseract.tesseract_cmd = tesseract_path
+    TESSERACT_AVAILABLE = True
+except FileNotFoundError as e:
+    TESSERACT_AVAILABLE = False
+    logger.error(f"Tesseract OCR not available: {e}. OCR validation will be skipped.")
+
 
 def extract_text_from_image(image_path: str) -> str:
     """
     Extract text from image using OCR (Tesseract).
     Returns lowercase text for easier matching.
     """
+    if not TESSERACT_AVAILABLE:
+        logger.warning("Tesseract not installed, skipping OCR extraction")
+        return ""
+
     try:
         logger.info(f"Running OCR on image: {image_path}")
-        
+
         # Open image
         image = Image.open(image_path)
-        
+
         # Convert to RGB if necessary
         if image.mode != 'RGB':
             image = image.convert('RGB')
-        
+
         # Extract text using pytesseract
-        text = pytesseract.image_to_string(image, lang='eng+ind')
-        
+        try:
+            text = pytesseract.image_to_string(image, lang='eng+ind')
+        except pytesseract.TesseractError as e:
+            # Falls back to English-only if the Indonesian language pack
+            # (tesseract-ocr-ind) isn't installed on the host.
+            logger.warning(f"OCR with lang='eng+ind' failed ({e}), retrying with 'eng'")
+            text = pytesseract.image_to_string(image, lang='eng')
+
         if text.strip():
             text_lower = text.lower()
             return text_lower
-        
+
         logger.warning("No text extracted from image")
         return ""
-        
+
     except Exception as e:
         logger.error(f"OCR extraction failed: {str(e)}")
         return ""
@@ -91,15 +108,21 @@ def validate_ocr_text(text: str) -> tuple[bool, list[str]]:
     Returns:
         tuple: (is_valid, found_keywords)
     """
+    if not TESSERACT_AVAILABLE:
+        # Tesseract isn't installed on this host — don't punish participants
+        # for a server misconfiguration, just skip the keyword check.
+        logger.warning("Tesseract unavailable, skipping OCR keyword validation")
+        return True, []
+
     found_required = [kw for kw in REQUIRED_KEYWORDS if kw in text]
     found_bonus = [kw for kw in BONUS_KEYWORDS if kw in text]
-    
+
     logger.info(f"OCR validation - Required found: {found_required}")
     logger.info(f"OCR validation - Bonus found: {found_bonus}")
-    
+
     # Valid if at least one required keyword found
     is_valid = len(found_required) > 0
-    
+
     return is_valid, found_required + found_bonus
 
 
