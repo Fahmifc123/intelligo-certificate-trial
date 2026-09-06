@@ -1,8 +1,6 @@
 import React from 'react'
 import { Upload, FileText, Image as ImageIcon, AlertCircle, Eye, X } from 'lucide-react'
 import type { CertificateFormProps } from '../types'
-import certificateOptions from '../data/certificateOptions.json'
-import CustomDropdown from './CustomDropdown'
 
 const CertificateForm = ({ 
   formData, 
@@ -71,20 +69,6 @@ const CertificateForm = ({
             placeholder="Contoh: Analisis Sentimen Twitter dengan Python"
             required
             className="input-field"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Pilih Kelas
-          </label>
-          <CustomDropdown
-            name="program_title"
-            value={formData.program_title}
-            onChange={onInputChange}
-            options={certificateOptions.certificateOptions}
-            placeholder="Pilih kelas yang diikuti"
-            required
           />
         </div>
 

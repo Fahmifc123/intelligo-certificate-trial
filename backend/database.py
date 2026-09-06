@@ -180,30 +180,29 @@ def save_certificate_submission(
     program_title: str,
     project_title: str,
     social_link: str,
-    start_date: str,
-    end_date: str,
     certificate_id: str
 ) -> bool:
     """
     Save certificate submission to database.
-    
+
     Args:
         email: User email
         full_name: User full name
         program_title: Program title
         project_title: Project title
         social_link: Social link/media
-        start_date: Certificate start date
-        end_date: Certificate end date
         certificate_id: Generated certificate ID
-        
+
     Returns:
         bool: True if saved successfully, False otherwise
     """
     try:
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
-        
+
+        # start_date/end_date are no longer collected per-submission, but the
+        # columns stay (NOT NULL) for compatibility with existing databases,
+        # so they're just written as empty strings.
         cursor.execute(
             """
             INSERT INTO certificate_submissions
@@ -216,8 +215,8 @@ def save_certificate_submission(
                 program_title,
                 project_title,
                 social_link,
-                start_date,
-                end_date,
+                "",
+                "",
                 certificate_id
             )
         )

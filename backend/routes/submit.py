@@ -3,7 +3,7 @@ from services.certificate import generate_certificate
 from services.validation import validate_image_file, save_uploaded_file, delete_uploaded_file
 from services.ocr import extract_text_from_image, validate_ocr_text, ai_validate
 from models import CertificateResponse
-from config import BASE_URL, logger
+from config import BASE_URL, PROGRAM_TITLE, logger
 from database import (
     check_email_in_form,
     check_email_already_generated,
@@ -18,27 +18,24 @@ router = APIRouter(tags=["certificates"])
 async def submit_certificate(
     email: str = Form(...),
     full_name: str = Form(...),
-    program_title: str = Form(...),
     project_title: str = Form(...),
     social_link: str = Form(...),
-    start_date: str = Form(...),
-    end_date: str = Form(...),
     screenshot: UploadFile = File(...)
 ):
     """
     Submit a certificate for processing and verification.
-    
+
     Args:
         email: User email address
         full_name: User full name
-        program_title: Program name (e.g., "Trial Bootcamp Data Science & AI - Intelligo ID")
         project_title: Project title the user worked on (for record only, not in certificate)
-        start_date: Start date (e.g., "23 October 2025")
-        end_date: End date (e.g., "27 October 2025")
         screenshot: Screenshot file from user
-        
+
     Returns:
         Processing result with certificate ID and status
+
+    The program/class is fixed to config.PROGRAM_TITLE since only one trial
+    program is offered right now — it's not taken from client input.
     """
     try:
         # Step 1: Check if email exists in Google Forms
@@ -85,19 +82,17 @@ async def submit_certificate(
         
         # Step 9: Generate certificate if all validations pass
         if is_ocr_valid and is_ai_valid:
-            cert_filename = generate_certificate(full_name, program_title, start_date, end_date)
+            cert_filename = generate_certificate(full_name, PROGRAM_TITLE)
             cert_url = f"{BASE_URL}/static/certificates/generate/{cert_filename}"
             cert_id = cert_filename.replace(".pdf", "")
-            
+
             # Step 10: Save submission to database
             save_certificate_submission(
                 email=email,
                 full_name=full_name,
-                program_title=program_title,
+                program_title=PROGRAM_TITLE,
                 project_title=project_title,
                 social_link=social_link,
-                start_date=start_date,
-                end_date=end_date,
                 certificate_id=cert_id
             )
 
@@ -169,11 +164,7 @@ async def generate_dummy_certificate(
     logger.info(f"Generating dummy certificate for {email}")
     
     try:
-        # Use dummy dates for testing
-        start_date = "23 October 2025"
-        end_date = "27 October 2025"
-        
-        filename = generate_certificate(name, project_title, start_date, end_date)
+        filename = generate_certificate(name, project_title)
         certificate_url = f"{BASE_URL}/static/certificates/generate/{filename}"
         
         logger.info(f"Dummy certificate generated: {certificate_url}")
