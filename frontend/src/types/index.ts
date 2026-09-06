@@ -3,9 +3,6 @@ export interface CertificateFormData {
   name: string;
   email: string;
   project_title: string;
-  program_title: string;
-  start_date: string;
-  end_date: string;
   social_link: string;
 }
 

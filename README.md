@@ -31,7 +31,14 @@ Environment variables (see `config.py`):
 - `BASE_URL` — public base URL used to build certificate download links (e.g. `https://api.yourdomain.com`). Defaults to `http://127.0.0.1:8002`.
 - `OPENAI_API_KEY` — optional; if unset, AI validation is skipped and OCR keyword matching alone is used.
 
-Google Sheets registration verification (`database.py`) is optional: if `google_sheets_creds.json` is not present, email verification is skipped and any email is allowed through.
+Google Sheets registration verification (`database.py`) checks the submitted email against the "Email" column of the `Form Responses 1` sheet at `GOOGLE_SHEET_ID`. It **fails closed**: if `google_sheets_creds.json` is missing, invalid, or the sheet can't be reached, submissions are rejected (not silently allowed) so unregistered people can't claim certificates just because verification is misconfigured. To enable it:
+
+1. Create a Google Cloud service account and enable the Google Sheets API + Google Drive API for it.
+2. Download the service account's JSON key.
+3. Share the Google Sheet with the service account's email (Viewer access is enough).
+4. Place the JSON key at `backend/google_sheets_creds.json` (or point `GOOGLE_SHEETS_CREDS_FILE` at another path).
+
+`GOOGLE_SHEETS_CREDS_FILE`, `GOOGLE_SHEET_ID`, and `GOOGLE_SHEET_NAME` can all be overridden via env vars if you're pointing at a different sheet per deployment.
 
 ## Frontend
 

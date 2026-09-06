@@ -104,160 +104,38 @@ def _get_title_prefix(project_title: str) -> str:
         return "TBDSAI"  # Default
 
 
-def _parse_date_for_id(date_str: str) -> str:
+def _remove_paragraphs_containing(shape, placeholder: str) -> None:
     """
-    Parse execution date string to get MMYY format.
-    Supports: "October 2025", "23 - 27 October 2025", "10/2025", etc.
-    Returns: "MMYY" format
+    Delete any paragraph in the shape's text frame whose text contains
+    `placeholder`, removing it entirely (no blank line left behind).
     """
-    import re
-    
-    date_str = date_str.strip()
-    
-    # Try to extract month and year from various formats
-    # Format: "23 - 27 October 2025" or "23-27 October 2025"
-    match = re.search(r'([A-Za-z]+)\s+(\d{4})', date_str)
-    if match:
-        month_name = match.group(1)
-        year = match.group(2)
-        date_str = f"{month_name} {year}"
-    
-    # Try to parse common date formats
-    date_formats = ["%B %Y", "%b %Y", "%m/%Y", "%Y-%m", "%Y"]
-    
-    for fmt in date_formats:
-        try:
-            parsed = datetime.strptime(date_str.strip(), fmt)
-            return parsed.strftime("%m%y")
-        except ValueError:
-            continue
-    
-    # If parsing fails, use current date
-    return datetime.now().strftime("%m%y")
+    if not hasattr(shape, "text_frame"):
+        return
+
+    for para in list(shape.text_frame.paragraphs):
+        if placeholder in para.text:
+            para._p.getparent().remove(para._p)
 
 
-def _format_date_range(start_date: str, end_date: str) -> str:
-    """
-    Format date range intelligently.
-    - Same month: "23 to 27 October 2025"
-    - Different months: "23 October to 27 November 2025"
-    
-    Accepts both ISO format (2026-03-01) and text format (23 October 2025)
-    """
-    from datetime import datetime
-    import re
-    
-    def parse_date(date_str: str) -> tuple:
-        """Parse date string to (day, month_name, year)"""
-        date_str = date_str.strip()
-        
-        # Try ISO format: "2026-03-01"
-        try:
-            date_obj = datetime.strptime(date_str, "%Y-%m-%d")
-            day = str(date_obj.day)
-            month_name = date_obj.strftime("%B")
-            year = str(date_obj.year)
-            return (day, month_name, year)
-        except ValueError:
-            pass
-        
-        # Try format: "23 October 2025"
-        match = re.match(r'(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})', date_str)
-        if match:
-            return match.groups()
-        
-        # Try format: "October 2025" (month only)
-        match = re.match(r'([A-Za-z]+)\s+(\d{4})', date_str)
-        if match:
-            return (None, match.group(1), match.group(2))
-        
-        return None, None, None
-    
-    start_day, start_month, start_year = parse_date(start_date)
-    end_day, end_month, end_year = parse_date(end_date)
-    
-    if start_day is None or end_day is None:
-        # Fallback: just use simple format
-        return f"{start_date} to {end_date}"
-    
-    # Check if same year and same month
-    if start_year == end_year and start_month == end_month:
-        return f"{start_day} to {end_day} {start_month} {start_year}"
-    else:
-        return f"{start_day} {start_month} to {end_day} {end_month} {end_year}"
-
-
-def _parse_certificate_info(certificate_info: str) -> tuple:
-    """
-    Parse combined certificate info string.
-    Format: "Trial Bootcamp Data Science & AI - Intelligo ID - 23 - 27 October 2025"
-    Returns: (project_title, execution_date)
-    """
-    import re
-    
-    # Pattern to detect if the last part is a date range like "23 - 27 October 2025"
-    # or a single date like "October 2025"
-    date_pattern = re.compile(r'^(?:\d+\s*-\s*)?\d+\s+[A-Za-z]+\s+\d{4}$')
-    
-    # Split by " - " but be careful with date ranges
-    # First, try to find if there's a date at the end
-    parts = certificate_info.split(" - ")
-    
-    if len(parts) >= 2:
-        # Check if last part looks like a date
-        last_part = parts[-1].strip()
-        
-        if date_pattern.match(last_part):
-            # Last part is a date (single or range)
-            execution_date = last_part
-            project_title = " - ".join(parts[:-1]).strip()
-        else:
-            # Could be "23 - 27 October 2025" where parts[-2] is part of date
-            if len(parts) >= 3:
-                # Check if last two parts form a date range
-                second_last = parts[-2].strip()
-                # If second_last is just a number (like "23"), it's part of date range
-                if second_last.isdigit() and len(second_last) <= 2:
-                    # Reconstruct date range
-                    execution_date = f"{parts[-2]} - {parts[-1]}"
-                    project_title = " - ".join(parts[:-2]).strip()
-                else:
-                    # Just use last part as date
-                    execution_date = last_part
-                    project_title = " - ".join(parts[:-1]).strip()
-            else:
-                execution_date = last_part
-                project_title = " - ".join(parts[:-1]).strip()
-    else:
-        # Single part, use as-is
-        project_title = certificate_info
-        execution_date = datetime.now().strftime("%B %Y")
-    
-    return project_title, execution_date
-
-
-def generate_certificate(name: str, program_title: str, start_date: str, end_date: str) -> str:
+def generate_certificate(name: str, program_title: str) -> str:
     """
     Generate a PDF certificate by editing the PPTX template and converting to PDF.
-    
+
     Args:
         name: Participant name
         program_title: Program name (e.g., "Trial Bootcamp Data Science & AI - Intelligo ID")
-        start_date: Start date (e.g., "23 October 2025")
-        end_date: End date (e.g., "27 October 2025")
-    
+
     Dynamic placeholders replaced:
     - {{NAMA}} - Participant name
     - {{JUDUL}} - Program title
-    - {{PELAKSANAAN}} - Date range formatted as "23 to 27 October 2025"
     - {{id}} - Certificate ID
+
+    The "held from {{PELAKSANAAN}}" line is removed entirely since trial
+    execution dates are no longer tracked per-submission.
     """
     if not PYPPTX_AVAILABLE:
         raise RuntimeError("python-pptx is required. Install with: pip install python-pptx")
-    
-    # Format execution date intelligently
-    execution_date = _format_date_range(start_date, end_date)
-    
+
     # Generate unique filename and issue ID
     file_id = str(uuid.uuid4())[:4].upper()
     
@@ -296,7 +174,6 @@ def generate_certificate(name: str, program_title: str, start_date: str, end_dat
     replacements = {
         "{{NAMA}}": name,
         "{{JUDUL}}": program_title,
-        "{{PELAKSANAAN}}": execution_date,
         "{{id}}": issue_id
     }
 
@@ -306,8 +183,10 @@ def generate_certificate(name: str, program_title: str, start_date: str, end_dat
     # just that line so it reliably fits on one line.
     font_size_overrides = {"{{id}}": Pt(9)}
 
-    # Replace placeholders in all shapes
+    # Replace placeholders in all shapes, and drop the execution-date line
+    # entirely (no start/end date is collected anymore).
     for shape in slide.shapes:
+        _remove_paragraphs_containing(shape, "{{PELAKSANAAN}}")
         _replace_text_in_shape(shape, replacements, font_size_overrides)
 
     # Save the modified PPTX

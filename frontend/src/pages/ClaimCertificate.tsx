@@ -6,7 +6,6 @@ import LoadingState from '../components/LoadingState'
 import SuccessState from '../components/SuccessState'
 import ErrorState from '../components/ErrorState'
 import AlreadyGeneratedState from '../components/AlreadyGeneratedState'
-import certificateOptions from '../data/certificateOptions.json'
 import type { CertificateFormData, CertificateResponse } from '../types'
 
 type Status = 'idle' | 'loading' | 'success' | 'error' | 'already-generated'
@@ -16,9 +15,6 @@ const ClaimCertificate = (): React.JSX.Element => {
     name: '',
     email: '',
     project_title: '',
-    program_title: '',
-    start_date: '',
-    end_date: '',
     social_link: '',
   })
   const [file, setFile] = useState<File | null>(null)
@@ -34,26 +30,10 @@ const ClaimCertificate = (): React.JSX.Element => {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>): void => {
     const { name, value } = e.target
-    setFormData(prev => {
-      const updated = {
-        ...prev,
-        [name]: value
-      }
-      
-      // Auto-populate dates when program_title changes
-      if (name === 'program_title') {
-        const selectedOption = certificateOptions.certificateOptions.find(
-          opt => opt.value === value
-        ) as any
-        
-        if (selectedOption) {
-          updated.start_date = selectedOption.start_date
-          updated.end_date = selectedOption.end_date
-        }
-      }
-      
-      return updated
-    })
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }))
   }
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -102,9 +82,6 @@ const ClaimCertificate = (): React.JSX.Element => {
       formDataToSend.append('full_name', formData.name)
       formDataToSend.append('email', formData.email)
       formDataToSend.append('project_title', formData.project_title)
-      formDataToSend.append('program_title', formData.program_title)
-      formDataToSend.append('start_date', formData.start_date)
-      formDataToSend.append('end_date', formData.end_date)
       formDataToSend.append('social_link', formData.social_link)
       formDataToSend.append('screenshot', screenshot)
 
@@ -138,9 +115,6 @@ const ClaimCertificate = (): React.JSX.Element => {
       name: '',
       email: '',
       project_title: '',
-      program_title: '',
-      start_date: '',
-      end_date: '',
       social_link: '',
     })
     setFile(null)

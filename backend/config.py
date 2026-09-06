@@ -43,6 +43,10 @@ MAX_FILE_SIZE = 2 * 1024 * 1024  # 2MB
 REQUIRED_KEYWORDS = ["intelligo", "#intelligoid", "bootcamp", "trial"]
 BONUS_KEYWORDS = ["project", "data", "analysis", "ai", "machine learning", "python"]
 
+# Only one trial program is offered right now, so the class name is fixed
+# server-side rather than taken from client input.
+PROGRAM_TITLE = "Trial Bootcamp Data Science & AI - Intelligo ID"
+
 # Certificate Settings
 CERTIFICATE_TEMPLATE = "INT-TBDSAI-{month}{year}-{file_id}"
 BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8002")
