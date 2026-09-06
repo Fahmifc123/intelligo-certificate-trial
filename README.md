@@ -31,14 +31,15 @@ Environment variables (see `config.py`):
 - `BASE_URL` — public base URL used to build certificate download links (e.g. `https://api.yourdomain.com`). Defaults to `http://127.0.0.1:8002`.
 - `OPENAI_API_KEY` — optional; if unset, AI validation is skipped and OCR keyword matching alone is used.
 
-Google Sheets registration verification (`database.py`) checks the submitted email against the "Email" column of the `Form Responses 1` sheet at `GOOGLE_SHEET_ID`. It **fails closed**: if `google_sheets_creds.json` is missing, invalid, or the sheet can't be reached, submissions are rejected (not silently allowed) so unregistered people can't claim certificates just because verification is misconfigured. To enable it:
+Google Sheets registration verification (`database.py`) checks the submitted email against the "Email" column of a public CSV export of a Google Sheet — no service account or credentials file needed, just an HTTP GET to `https://docs.google.com/spreadsheets/d/<id>/gviz/tq?tqx=out:csv&sheet=<name>`. It **fails closed**: if the sheet can't be fetched as CSV (not shared publicly, wrong ID/tab name, network error), submissions are rejected (not silently allowed) so unregistered people can't claim certificates just because verification is misconfigured.
 
-1. Create a Google Cloud service account and enable the Google Sheets API + Google Drive API for it.
-2. Download the service account's JSON key.
-3. Share the Google Sheet with the service account's email (Viewer access is enough).
-4. Place the JSON key at `backend/google_sheets_creds.json` (or point `GOOGLE_SHEETS_CREDS_FILE` at another path).
+**Privacy note:** the sheet (or tab) pointed at by `GOOGLE_SHEET_ID`/`GOOGLE_SHEET_NAME` must be shared as "Anyone with the link can view" for the CSV fetch to work — anyone who knows the sheet ID can view everything in it. Since `GOOGLE_SHEET_ID` lives in this public repo/config, **don't point it at the raw form-responses sheet** (it likely has participants' names, phone numbers, etc.). Instead:
 
-`GOOGLE_SHEETS_CREDS_FILE`, `GOOGLE_SHEET_ID`, and `GOOGLE_SHEET_NAME` can all be overridden via env vars if you're pointing at a different sheet per deployment.
+1. Create a **separate** Google Sheet containing only an Email column, e.g. cell A2 filled with `=IMPORTRANGE("<form-responses-sheet-id>", "Form Responses 1!C2:C")` (approve the IMPORTRANGE access prompt once).
+2. Share that separate sheet as "Anyone with the link" → Viewer. The original form-responses sheet stays private.
+3. Set `GOOGLE_SHEET_ID` to the new sheet's ID and `GOOGLE_SHEET_NAME` to its tab name (env vars, see below).
+
+`GOOGLE_SHEET_ID` and `GOOGLE_SHEET_NAME` can be overridden via env vars if you're pointing at a different sheet per deployment.
 
 ## Frontend
 

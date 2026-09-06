@@ -2,18 +2,22 @@
 Database module for certificate submission tracking.
 Handles SQLite database operations and Google Sheets verification.
 """
+import csv
+import io
 import sqlite3
 import os
 from datetime import datetime
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from urllib.parse import quote
+import requests
 from config import logger
 
 # Database file path
 DB_FILE = "certificates.db"
 
-# Google Sheets credentials (override paths/IDs via env vars per-deployment)
-GOOGLE_SHEETS_CREDS_FILE = os.getenv("GOOGLE_SHEETS_CREDS_FILE", "google_sheets_creds.json")
+# Registration verification reads a public CSV export of a Google Sheet —
+# no service account/credentials file needed. The sheet (or, for privacy, a
+# separate sheet that only exposes an Email column via IMPORTRANGE) must be
+# shared as "Anyone with the link" (Viewer). See README for setup.
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "1Xsp_bYonx9rsT7bEZOmCpaEJA7MefO_mdGNYOmIVG3o")
 SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME", "Form Responses 1")
 
@@ -50,54 +54,55 @@ def init_db():
 
 def get_google_sheet_emails() -> set:
     """
-    Fetch all emails from Google Sheets 'Form Responses 1' sheet.
-    Returns a set of valid emails.
+    Fetch all emails from a public CSV export of the registration Google
+    Sheet. Requires no credentials, but the sheet must be shared as
+    "Anyone with the link" (Viewer) — otherwise Google returns an HTML
+    login/error page instead of CSV and this returns None (verification
+    unavailable).
+
+    Returns:
+        set of valid emails, or None if the sheet couldn't be read.
     """
+    url = (
+        f"https://docs.google.com/spreadsheets/d/{GOOGLE_SHEET_ID}/gviz/tq"
+        f"?tqx=out:csv&sheet={quote(SHEET_NAME)}"
+    )
     try:
-        # Check if credentials file exists
-        if not os.path.exists(GOOGLE_SHEETS_CREDS_FILE):
-            logger.warning(f"Google Sheets credentials file not found: {GOOGLE_SHEETS_CREDS_FILE}")
-            logger.info("Skipping Google Sheets verification")
+        response = requests.get(url, timeout=10)
+
+        if response.status_code != 200 or "text/csv" not in response.headers.get("Content-Type", ""):
+            logger.error(
+                f"Failed to fetch registration sheet as CSV (HTTP {response.status_code}). "
+                "Make sure the sheet is shared as 'Anyone with the link can view' "
+                f"and that GOOGLE_SHEET_NAME ('{SHEET_NAME}') matches an existing tab."
+            )
             return None
-        
-        # Setup Google Sheets API
-        scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-        creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_SHEETS_CREDS_FILE, scope)
-        client = gspread.authorize(creds)
-        
-        # Open the spreadsheet
-        sheet = client.open_by_key(GOOGLE_SHEET_ID)
-        worksheet = sheet.worksheet(SHEET_NAME)
-        
-        # Get all values from the sheet
-        all_values = worksheet.get_all_values()
-        
-        # Extract emails from Email column (Column C = index 2)
-        # Find which column has "Email" header
+
+        rows = list(csv.reader(io.StringIO(response.text)))
+        if not rows:
+            logger.warning("Registration sheet CSV is empty")
+            return None
+
+        # Find which column has the "Email" header
+        email_column_index = next(
+            (idx for idx, header in enumerate(rows[0]) if header.strip().lower() == "email"),
+            None
+        )
+        if email_column_index is None:
+            logger.warning("Email column not found in registration sheet header")
+            return None
+
         emails = set()
-        email_column_index = None
-        
-        if len(all_values) > 0:
-            # Find Email column index from header row
-            for idx, header in enumerate(all_values[0]):
-                if header.strip().lower() == "email":
-                    email_column_index = idx
-                    break
-        
-        # Extract emails from the found column
-        if email_column_index is not None and len(all_values) > 1:
-            for row in all_values[1:]:  # Skip header row
-                if row and len(row) > email_column_index:
-                    email = row[email_column_index].strip().lower()
-                    if email and "@" in email:
-                        emails.add(email)
-        else:
-            logger.warning("Email column not found in sheet header")
-        
-        logger.info(f"Fetched {len(emails)} valid emails from Google Sheets")
+        for row in rows[1:]:
+            if len(row) > email_column_index:
+                email = row[email_column_index].strip().lower()
+                if email and "@" in email:
+                    emails.add(email)
+
+        logger.info(f"Fetched {len(emails)} valid emails from registration sheet")
         return emails
-    except Exception as e:
-        logger.error(f"Error fetching Google Sheets data: {str(e)}")
+    except requests.RequestException as e:
+        logger.error(f"Error fetching registration sheet: {str(e)}")
         return None
 
 
