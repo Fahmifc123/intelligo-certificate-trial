@@ -42,10 +42,11 @@ async def submit_certificate(
     """
     try:
         # Step 1: Check if email exists in Google Forms
-        if not check_email_in_form(email):
+        is_registered, registration_error = check_email_in_form(email)
+        if not is_registered:
             return {
                 "success": False,
-                "error": "Email tidak ditemukan dalam daftar peserta form. Pastikan Anda telah mengisi form terlebih dahulu."
+                "error": registration_error
             }
         
         # Step 2: Check if email has already generated a certificate

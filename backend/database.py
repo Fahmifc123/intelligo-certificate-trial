@@ -12,10 +12,10 @@ from config import logger
 # Database file path
 DB_FILE = "certificates.db"
 
-# Google Sheets credentials (update with your credentials)
-GOOGLE_SHEETS_CREDS_FILE = "google_sheets_creds.json"
-GOOGLE_SHEET_ID = "1Xsp_bYonx9rsT7bEZOmCpaEJA7MefO_mdGNYOmIVG3o"
-SHEET_NAME = "Form Responses 1"
+# Google Sheets credentials (override paths/IDs via env vars per-deployment)
+GOOGLE_SHEETS_CREDS_FILE = os.getenv("GOOGLE_SHEETS_CREDS_FILE", "google_sheets_creds.json")
+GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID", "1Xsp_bYonx9rsT7bEZOmCpaEJA7MefO_mdGNYOmIVG3o")
+SHEET_NAME = os.getenv("GOOGLE_SHEET_NAME", "Form Responses 1")
 
 
 def init_db():
@@ -101,31 +101,47 @@ def get_google_sheet_emails() -> set:
         return None
 
 
-def check_email_in_form(email: str) -> bool:
+def check_email_in_form(email: str) -> tuple[bool, str]:
     """
     Check if email exists in Google Forms response sheet.
-    
+
+    Fails closed: if the sheet can't be reached (missing/invalid
+    credentials, network error, etc.), the email is rejected rather than
+    silently let through, since that would let unregistered people claim
+    certificates whenever Google Sheets verification is misconfigured.
+
     Args:
         email: Email to verify
-        
+
     Returns:
-        bool: True if email exists in form responses, False otherwise
+        tuple: (is_allowed, error_message). error_message is "" when allowed.
     """
     try:
         sheet_emails = get_google_sheet_emails()
-        
-        # If Google Sheets fetch fails, allow submission
+
         if sheet_emails is None:
-            logger.warning(f"Google Sheets unavailable, allowing email: {email}")
-            return True
-        
+            logger.error(
+                f"Google Sheets verification unavailable, rejecting email: {email}"
+            )
+            return False, (
+                "Sistem verifikasi pendaftaran sedang bermasalah. "
+                "Silakan coba lagi beberapa saat lagi atau hubungi panitia."
+            )
+
         is_valid = email.lower() in sheet_emails
         logger.info(f"Email validation for {email}: {is_valid}")
-        return is_valid
+        if not is_valid:
+            return False, (
+                "Email tidak ditemukan dalam daftar peserta form. "
+                "Pastikan Anda telah mengisi form terlebih dahulu."
+            )
+        return True, ""
     except Exception as e:
         logger.error(f"Error checking email in form: {str(e)}")
-        # Allow submission if verification fails
-        return True
+        return False, (
+            "Sistem verifikasi pendaftaran sedang bermasalah. "
+            "Silakan coba lagi beberapa saat lagi atau hubungi panitia."
+        )
 
 
 def check_email_already_generated(email: str) -> bool:
