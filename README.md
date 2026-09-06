@@ -31,14 +31,11 @@ Environment variables (see `config.py`):
 - `BASE_URL` — public base URL used to build certificate download links (e.g. `https://api.yourdomain.com`). Defaults to `http://127.0.0.1:8002`.
 - `OPENAI_API_KEY` — optional; if unset, AI validation is skipped and OCR keyword matching alone is used.
 
-Google Sheets registration verification (`database.py`) checks the submitted email against the "Email" column of the `Form Responses 1` sheet at `GOOGLE_SHEET_ID`. It **fails closed**: if `google_sheets_creds.json` is missing, invalid, or the sheet can't be reached, submissions are rejected (not silently allowed) so unregistered people can't claim certificates just because verification is misconfigured. To enable it:
+Google Sheets registration verification (`database.py`) checks the submitted email against the "Email" column of a public CSV export of a Google Sheet — no service account or credentials file needed, just an HTTP GET to `https://docs.google.com/spreadsheets/d/<id>/gviz/tq?tqx=out:csv&sheet=<name>`. It **fails closed**: if the sheet can't be fetched as CSV (not shared publicly, wrong ID/tab name, network error), submissions are rejected (not silently allowed) so unregistered people can't claim certificates just because verification is misconfigured.
 
-1. Create a Google Cloud service account and enable the Google Sheets API + Google Drive API for it.
-2. Download the service account's JSON key.
-3. Share the Google Sheet with the service account's email (Viewer access is enough).
-4. Place the JSON key at `backend/google_sheets_creds.json` (or point `GOOGLE_SHEETS_CREDS_FILE` at another path).
+To enable it, share the sheet at `GOOGLE_SHEET_ID` (defaults to the "Form Responses 1" sheet) as **"Anyone with the link" → Viewer**: open the sheet → Share (top right) → General access → change from "Restricted" to "Anyone with the link". No code or env var changes needed if you're keeping the default sheet.
 
-`GOOGLE_SHEETS_CREDS_FILE`, `GOOGLE_SHEET_ID`, and `GOOGLE_SHEET_NAME` can all be overridden via env vars if you're pointing at a different sheet per deployment.
+Note: since `GOOGLE_SHEET_ID` lives in this repo/config, sharing that sheet publicly means anyone who has the ID can view its full contents (not just emails). If that's ever a concern, point `GOOGLE_SHEET_ID`/`GOOGLE_SHEET_NAME` (env vars) at a separate sheet instead that only exposes an Email column via `IMPORTRANGE`, and keep the original responses sheet private.
 
 ## Frontend
 

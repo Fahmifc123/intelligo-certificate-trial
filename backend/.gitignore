@@ -2,5 +2,4 @@ __pycache__
 venv
 .env
 static
-google_sheets_creds.json
 certificates.db
