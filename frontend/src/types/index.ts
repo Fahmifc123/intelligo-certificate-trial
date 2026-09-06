@@ -59,3 +59,14 @@ export interface Requirement {
   icon: React.ComponentType<{ className?: string }>;
   text: string;
 }
+
+// Admin Dashboard Types
+export interface Submission {
+  email: string;
+  full_name: string;
+  program_title: string;
+  project_title: string;
+  social_link: string;
+  certificate_id: string;
+  submitted_at: string;
+}

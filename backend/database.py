@@ -282,6 +282,36 @@ def get_certificate_by_email(email: str) -> dict:
         return None
 
 
+def delete_submission_by_email(email: str) -> bool:
+    """
+    Delete a certificate submission by email, allowing that email to
+    generate a certificate again (used by the admin dashboard's reset).
+
+    Args:
+        email: User email
+
+    Returns:
+        bool: True if a row was deleted, False if no matching row existed.
+    """
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "DELETE FROM certificate_submissions WHERE email = ?",
+            (email.lower(),)
+        )
+        deleted = cursor.rowcount > 0
+
+        conn.commit()
+        conn.close()
+        logger.info(f"Admin reset submission for {email}: deleted={deleted}")
+        return deleted
+    except Exception as e:
+        logger.error(f"Error deleting submission for {email}: {str(e)}")
+        return False
+
+
 def get_all_submissions() -> list:
     """Get all certificate submissions from database."""
     try:

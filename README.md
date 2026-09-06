@@ -37,6 +37,12 @@ To enable it, share the sheet at `GOOGLE_SHEET_ID` (defaults to the "Form Respon
 
 Note: since `GOOGLE_SHEET_ID` lives in this repo/config, sharing that sheet publicly means anyone who has the ID can view its full contents (not just emails). If that's ever a concern, point `GOOGLE_SHEET_ID`/`GOOGLE_SHEET_NAME` (env vars) at a separate sheet instead that only exposes an Email column via `IMPORTRANGE`, and keep the original responses sheet private.
 
+### Admin dashboard
+
+A minimal dashboard at `/admin` on the frontend lists every certificate submission and lets you reset one (delete its row, so that email can submit/generate again) without touching the database by hand.
+
+It's disabled by default. To enable it, set `ADMIN_API_KEY` in the backend's `.env` to a long random value and restart the backend — the dashboard's login screen asks for this same value, sent as the `X-Admin-Key` header on every admin request. Without `ADMIN_API_KEY` set, `/admin/*` endpoints return 503 rather than being open with no password.
+
 ## Frontend
 
 ```bash

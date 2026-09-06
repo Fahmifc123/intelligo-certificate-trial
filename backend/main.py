@@ -21,6 +21,7 @@ from config import (
 )
 from database import init_db
 from routes.submit import router as submit_router
+from routes.admin import router as admin_router
 
 # ============================================
 # APP INITIALIZATION
@@ -46,6 +47,7 @@ app.mount("/static", StaticFiles(directory=STATIC_DIRECTORY), name="static")
 
 # Include routers
 app.include_router(submit_router)
+app.include_router(admin_router)
 
 
 # ============================================
