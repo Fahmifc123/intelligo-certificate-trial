@@ -19,11 +19,15 @@ APP_DESCRIPTION = "Trial Bootcamp Certificate Generation API"
 APP_VERSION = "1.0.0"
 
 # CORS Settings
+# Exact-match origins allowed by the browser.
 CORS_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
-    "https://*.vercel.app",
 ]
+# FastAPI's CORSMiddleware does exact string matching on allow_origins, so a
+# glob like "https://*.vercel.app" never actually matches anything — any
+# Vercel preview/prod domain needs a regex instead.
+CORS_ORIGIN_REGEX = r"https://.*\.vercel\.app"
 
 # Static Files
 STATIC_DIRECTORY = "static"
@@ -41,8 +45,7 @@ BONUS_KEYWORDS = ["project", "data", "analysis", "ai", "machine learning", "pyth
 
 # Certificate Settings
 CERTIFICATE_TEMPLATE = "INT-TBDSAI-{month}{year}-{file_id}"
-BASE_URL = "http://43.134.70.75:8002"
-# BASE_URL = "http://127.0.0.1:8002"
+BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8002")
 
 
 # In-memory storage for duplicate prevention
