@@ -238,6 +238,65 @@ def save_certificate_submission(
         return False
 
 
+def upsert_certificate_submission(
+    email: str,
+    full_name: str,
+    program_title: str,
+    certificate_id: str
+) -> bool:
+    """
+    Save (or overwrite) a certificate submission, for admin-triggered manual
+    generation. Unlike save_certificate_submission, this replaces any
+    existing row for the email instead of failing on the UNIQUE constraint —
+    an admin manually generating a certificate should be able to do it again
+    for the same email (e.g. correcting a typo'd name) without a separate
+    reset step first.
+
+    Args:
+        email: Recipient email
+        full_name: Name to print on the certificate
+        program_title: Program title
+        certificate_id: Generated certificate ID
+
+    Returns:
+        bool: True if saved successfully, False otherwise
+    """
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        cursor = conn.cursor()
+
+        cursor.execute(
+            """
+            INSERT INTO certificate_submissions
+            (email, full_name, program_title, project_title, social_link, start_date, end_date, certificate_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT(email) DO UPDATE SET
+                full_name=excluded.full_name,
+                program_title=excluded.program_title,
+                certificate_id=excluded.certificate_id,
+                submitted_at=CURRENT_TIMESTAMP
+            """,
+            (
+                email.lower(),
+                full_name,
+                program_title,
+                "Generated manually by admin",
+                "",
+                "",
+                "",
+                certificate_id
+            )
+        )
+
+        conn.commit()
+        conn.close()
+        logger.info(f"Admin manual certificate submission saved for {email}")
+        return True
+    except Exception as e:
+        logger.error(f"Error saving admin manual submission for {email}: {str(e)}")
+        return False
+
+
 def get_certificate_by_email(email: str) -> dict:
     """
     Get certificate information by email.
