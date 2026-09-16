@@ -51,6 +51,18 @@ The dashboard also has a **"Generate Manual"** form: pick any name and email, an
 
 Without `RESEND_API_KEY` set, "Generate Manual" still generates the certificate (so you can download and send it manually) but reports that no email was sent, instead of failing silently.
 
+There's also a **"Bulk Generate (CSV)"** form for doing the same for many people at once: upload a CSV with columns `name`, `email` (required) and `program_title` (optional, per-row override of the default program). Each row is generated and emailed independently, and the response lists every row's result (including failures) so a bad row doesn't block the rest of the batch or hide which rows still need fixing.
+
+Rows are processed one at a time server-side, so a large CSV can take a while (each row does a PPTX→PDF conversion plus an email API call). If you're behind Nginx (see below), bump `proxy_read_timeout` for the backend's location block past Nginx's 60s default for batches beyond ~15-20 rows, e.g.:
+
+```nginx
+location / {
+    proxy_pass http://127.0.0.1:8002;
+    proxy_read_timeout 600s;
+    # ...
+}
+```
+
 ## Frontend
 
 ```bash

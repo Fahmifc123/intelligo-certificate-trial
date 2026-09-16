@@ -1,6 +1,27 @@
-import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2, LogOut, Search, Send, CheckCircle2, XCircle } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { RefreshCw, Trash2, LogOut, Search, Send, CheckCircle2, XCircle, Upload, Download } from 'lucide-react'
 import type { Submission } from '../types'
+
+interface BulkRowResult {
+  name: string
+  email: string
+  success: boolean
+  certificate_url?: string
+  email_sent?: boolean
+  email_message?: string
+  error?: string
+}
+
+interface BulkResult {
+  success: boolean
+  total?: number
+  succeeded?: number
+  failed?: number
+  results?: BulkRowResult[]
+  error?: string
+}
+
+const SAMPLE_CSV = 'name,email,program_title\nBudi Santoso,budi@example.com,\nAni Wijaya,ani@example.com,Trial Bootcamp Artificial Intelligence - Intelligo ID\n'
 
 const STORAGE_KEY = 'intelligo_admin_key'
 
@@ -24,6 +45,11 @@ const AdminDashboard = (): React.JSX.Element => {
     email_message?: string
     error?: string
   } | null>(null)
+
+  const [bulkFile, setBulkFile] = useState<File | null>(null)
+  const [bulkLoading, setBulkLoading] = useState(false)
+  const [bulkResult, setBulkResult] = useState<BulkResult | null>(null)
+  const bulkFileInputRef = useRef<HTMLInputElement>(null)
 
   const baseUrl = import.meta.env.VITE_APP_BASE_URL
 
@@ -137,6 +163,45 @@ const AdminDashboard = (): React.JSX.Element => {
     } finally {
       setManualLoading(false)
     }
+  }
+
+  const handleBulkUpload = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!bulkFile) return
+
+    setBulkLoading(true)
+    setBulkResult(null)
+    try {
+      const formData = new FormData()
+      formData.append('file', bulkFile)
+
+      const response = await fetch(`${baseUrl}/admin/generate-bulk`, {
+        method: 'POST',
+        headers: { 'X-Admin-Key': adminKey },
+        body: formData
+      })
+      const data = await response.json()
+      setBulkResult(data)
+      if (data.success) {
+        setBulkFile(null)
+        if (bulkFileInputRef.current) bulkFileInputRef.current.value = ''
+        fetchSubmissions(adminKey)
+      }
+    } catch (err) {
+      setBulkResult({ success: false, error: 'Tidak bisa terhubung ke server. Kalau file CSV besar, coba pecah jadi beberapa file lebih kecil.' })
+    } finally {
+      setBulkLoading(false)
+    }
+  }
+
+  const handleDownloadSample = (): void => {
+    const blob = new Blob([SAMPLE_CSV], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = 'contoh-bulk-sertifikat.csv'
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const filtered = submissions.filter(s => {
@@ -271,6 +336,95 @@ const AdminDashboard = (): React.JSX.Element => {
                 <p className="flex items-center gap-2 text-red-700">
                   <XCircle className="w-4 h-4" /> {manualResult.error || 'Gagal generate sertifikat.'}
                 </p>
+              )}
+            </div>
+          )}
+        </div>
+
+        <div className="card p-6 mb-4">
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <h2 className="text-lg font-semibold text-secondary">Bulk Generate (CSV)</h2>
+            <button
+              type="button"
+              onClick={handleDownloadSample}
+              className="flex items-center gap-1.5 text-xs text-primary hover:underline whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Download contoh CSV
+            </button>
+          </div>
+          <p className="text-sm text-gray-500 mb-4">
+            Generate & kirim email untuk banyak peserta sekaligus. Kolom CSV: <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">name</code>, <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">email</code> (wajib), <code className="text-xs bg-gray-100 px-1 py-0.5 rounded">program_title</code> (opsional).
+          </p>
+          <form onSubmit={handleBulkUpload} className="flex flex-col sm:flex-row gap-3">
+            <input
+              ref={bulkFileInputRef}
+              type="file"
+              accept=".csv"
+              onChange={e => setBulkFile(e.target.files?.[0] || null)}
+              className="input-field flex-1"
+              required
+            />
+            <button
+              type="submit"
+              className="btn-primary flex items-center justify-center gap-2 whitespace-nowrap"
+              disabled={bulkLoading || !bulkFile}
+            >
+              <Upload className="w-4 h-4" />
+              {bulkLoading ? 'Memproses...' : 'Upload & Generate Semua'}
+            </button>
+          </form>
+
+          {bulkLoading && (
+            <p className="text-xs text-gray-400 mt-3">
+              Sedang diproses satu per satu, bisa memakan waktu untuk banyak baris. Jangan tutup halaman ini.
+            </p>
+          )}
+
+          {bulkResult && (
+            <div className="mt-4">
+              {!bulkResult.success ? (
+                <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700 flex items-center gap-2">
+                  <XCircle className="w-4 h-4" /> {bulkResult.error}
+                </div>
+              ) : (
+                <div>
+                  <div className="p-3 rounded-lg bg-gray-50 border border-gray-200 text-sm text-secondary mb-3">
+                    Total {bulkResult.total} baris — <span className="text-green-700 font-medium">{bulkResult.succeeded} berhasil</span>
+                    {bulkResult.failed! > 0 && <span className="text-red-600 font-medium">, {bulkResult.failed} gagal</span>}.
+                  </div>
+                  <div className="overflow-x-auto max-h-72 overflow-y-auto border border-gray-100 rounded-lg">
+                    <table className="w-full text-xs">
+                      <thead className="sticky top-0 bg-gray-50">
+                        <tr className="text-left text-gray-600 border-b border-gray-200">
+                          <th className="px-3 py-2 font-medium">Nama</th>
+                          <th className="px-3 py-2 font-medium">Email</th>
+                          <th className="px-3 py-2 font-medium">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {bulkResult.results?.map((r, i) => (
+                          <tr key={i} className="border-b border-gray-100 last:border-0">
+                            <td className="px-3 py-2">{r.name}</td>
+                            <td className="px-3 py-2 text-gray-600">{r.email}</td>
+                            <td className="px-3 py-2">
+                              {r.success ? (
+                                <span className={`flex items-center gap-1 ${r.email_sent ? 'text-green-700' : 'text-orange-600'}`}>
+                                  <CheckCircle2 className="w-3.5 h-3.5" />
+                                  Sertifikat OK{r.email_sent ? ', email terkirim' : ', email gagal terkirim'}
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-red-600">
+                                  <XCircle className="w-3.5 h-3.5" /> {r.error}
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               )}
             </div>
           )}
