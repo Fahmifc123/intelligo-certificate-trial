@@ -43,6 +43,14 @@ A minimal dashboard at `/admin` on the frontend lists every certificate submissi
 
 It's disabled by default. To enable it, set `ADMIN_API_KEY` in the backend's `.env` to a long random value and restart the backend — the dashboard's login screen asks for this same value, sent as the `X-Admin-Key` header on every admin request. Without `ADMIN_API_KEY` set, `/admin/*` endpoints return 503 rather than being open with no password.
 
+The dashboard also has a **"Generate Manual"** form: pick any name and email, and it generates a certificate for that name (bypassing registration/OCR/AI validation entirely, since it's admin-triggered) and emails the PDF to that address, via [Resend](https://resend.com)'s HTTP API. To enable sending:
+
+1. Add and verify the sending domain (e.g. `intelligo.id`) at [resend.com/domains](https://resend.com/domains) — Resend gives you DNS records (SPF/DKIM) to add wherever the domain's DNS is managed.
+2. Create an API key at [resend.com/api-keys](https://resend.com/api-keys).
+3. Set `RESEND_API_KEY` (the key) and `MAIL_FROM` (e.g. `Intelligo ID <noreply@intelligo.id>`, must be on the verified domain) in the backend's `.env`, then restart.
+
+Without `RESEND_API_KEY` set, "Generate Manual" still generates the certificate (so you can download and send it manually) but reports that no email was sent, instead of failing silently.
+
 ## Frontend
 
 ```bash

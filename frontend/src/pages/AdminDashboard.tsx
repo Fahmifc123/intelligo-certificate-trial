@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { RefreshCw, Trash2, LogOut, Search } from 'lucide-react'
+import { RefreshCw, Trash2, LogOut, Search, Send, CheckCircle2, XCircle } from 'lucide-react'
 import type { Submission } from '../types'
 
 const STORAGE_KEY = 'intelligo_admin_key'
@@ -12,6 +12,18 @@ const AdminDashboard = (): React.JSX.Element => {
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
   const [deletingEmail, setDeletingEmail] = useState<string | null>(null)
+
+  const [manualName, setManualName] = useState('')
+  const [manualEmail, setManualEmail] = useState('')
+  const [manualProgram, setManualProgram] = useState('')
+  const [manualLoading, setManualLoading] = useState(false)
+  const [manualResult, setManualResult] = useState<{
+    success: boolean
+    certificate_url?: string
+    email_sent?: boolean
+    email_message?: string
+    error?: string
+  } | null>(null)
 
   const baseUrl = import.meta.env.VITE_APP_BASE_URL
 
@@ -93,6 +105,40 @@ const AdminDashboard = (): React.JSX.Element => {
     }
   }
 
+  const handleManualGenerate = async (e: React.FormEvent): Promise<void> => {
+    e.preventDefault()
+    if (!manualName.trim() || !manualEmail.trim()) return
+
+    setManualLoading(true)
+    setManualResult(null)
+    try {
+      const response = await fetch(`${baseUrl}/admin/generate-manual`, {
+        method: 'POST',
+        headers: {
+          'X-Admin-Key': adminKey,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: manualName.trim(),
+          email: manualEmail.trim(),
+          program_title: manualProgram.trim() || undefined
+        })
+      })
+      const data = await response.json()
+      setManualResult(data)
+      if (data.success) {
+        setManualName('')
+        setManualEmail('')
+        setManualProgram('')
+        fetchSubmissions(adminKey)
+      }
+    } catch (err) {
+      setManualResult({ success: false, error: 'Tidak bisa terhubung ke server.' })
+    } finally {
+      setManualLoading(false)
+    }
+  }
+
   const filtered = submissions.filter(s => {
     const q = search.toLowerCase()
     return (
@@ -159,6 +205,76 @@ const AdminDashboard = (): React.JSX.Element => {
             {error}
           </div>
         )}
+
+        <div className="card p-6 mb-4">
+          <h2 className="text-lg font-semibold text-secondary mb-1">Generate Manual</h2>
+          <p className="text-sm text-gray-500 mb-4">
+            Generate sertifikat dengan nama bebas dan langsung kirim ke email peserta, tanpa lewat form/validasi publik.
+          </p>
+          <form onSubmit={handleManualGenerate} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Nama Lengkap"
+              value={manualName}
+              onChange={e => setManualName(e.target.value)}
+              required
+            />
+            <input
+              type="email"
+              className="input-field"
+              placeholder="Email Tujuan"
+              value={manualEmail}
+              onChange={e => setManualEmail(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Judul Program (opsional, default: Trial Bootcamp Data Science & AI)"
+              value={manualProgram}
+              onChange={e => setManualProgram(e.target.value)}
+            />
+            <button
+              type="submit"
+              className="btn-primary md:col-span-3 flex items-center justify-center gap-2"
+              disabled={manualLoading}
+            >
+              <Send className="w-4 h-4" />
+              {manualLoading ? 'Memproses...' : 'Generate & Kirim Email'}
+            </button>
+          </form>
+
+          {manualResult && (
+            <div className={`mt-4 p-3 rounded-lg text-sm ${manualResult.success ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+              {manualResult.success ? (
+                <div className="space-y-1">
+                  <p className="flex items-center gap-2 text-green-700 font-medium">
+                    <CheckCircle2 className="w-4 h-4" /> Sertifikat berhasil digenerate.
+                  </p>
+                  {manualResult.certificate_url && (
+                    <a
+                      href={manualResult.certificate_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary underline text-xs block"
+                    >
+                      Lihat PDF sertifikat
+                    </a>
+                  )}
+                  <p className={`flex items-center gap-2 text-xs ${manualResult.email_sent ? 'text-green-700' : 'text-orange-600'}`}>
+                    {manualResult.email_sent ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
+                    {manualResult.email_message}
+                  </p>
+                </div>
+              ) : (
+                <p className="flex items-center gap-2 text-red-700">
+                  <XCircle className="w-4 h-4" /> {manualResult.error || 'Gagal generate sertifikat.'}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
 
         <div className="card p-4 mb-4">
           <div className="relative">

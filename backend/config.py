@@ -60,6 +60,13 @@ BASE_URL = os.getenv("BASE_URL", "http://127.0.0.1:8002")
 # entirely rather than left open with a guessable default.
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")
 
+# Outbound email (admin "generate & send" feature) via Resend's HTTP API.
+# If RESEND_API_KEY is unset, email sending is disabled — the admin
+# endpoint still generates the certificate but reports that no email was
+# sent, rather than silently failing.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+MAIL_FROM = os.getenv("MAIL_FROM", "Intelligo ID <noreply@intelligo.id>")
+
 
 # In-memory storage for duplicate prevention
 processed_emails = set()
