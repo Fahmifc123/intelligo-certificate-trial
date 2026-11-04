@@ -90,10 +90,12 @@ def _generate_and_send_one(name: str, email: str, program_title: str | None) -> 
 
 @router.get("/submissions")
 async def list_submissions(x_admin_key: str | None = Header(default=None)):
-    """List all certificate submissions."""
+    """List all certificate submissions, each with a direct PDF link."""
     _check_admin_key(x_admin_key)
     try:
         submissions = get_all_submissions()
+        for s in submissions:
+            s["certificate_url"] = f"{BASE_URL}/static/certificates/generate/{s['certificate_id']}.pdf"
         return {"success": True, "submissions": submissions}
     except Exception as e:
         logger.error(f"Error listing submissions for admin: {str(e)}")
