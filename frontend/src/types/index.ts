@@ -68,5 +68,6 @@ export interface Submission {
   project_title: string;
   social_link: string;
   certificate_id: string;
+  certificate_url: string;
   submitted_at: string;
 }

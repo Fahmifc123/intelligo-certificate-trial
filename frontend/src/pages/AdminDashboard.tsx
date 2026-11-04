@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { RefreshCw, Trash2, LogOut, Search, Send, CheckCircle2, XCircle, Upload, Download, Plus } from 'lucide-react'
+import { RefreshCw, Trash2, LogOut, Search, Send, CheckCircle2, XCircle, Upload, Download, Plus, FileText } from 'lucide-react'
 import type { Submission } from '../types'
 
 interface BulkRowResult {
@@ -669,7 +669,16 @@ const AdminDashboard = (): React.JSX.Element => {
                     <td className="px-4 py-3 text-gray-600">{s.email}</td>
                     <td className="px-4 py-3 font-mono text-xs">{s.certificate_id}</td>
                     <td className="px-4 py-3 text-gray-500">{s.submitted_at}</td>
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                      <a
+                        href={s.certificate_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg text-blue-600 hover:bg-blue-50 text-xs font-medium"
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        Lihat Sertifikat
+                      </a>
                       <button
                         onClick={() => handleReset(s.email)}
                         disabled={deletingEmail === s.email}
